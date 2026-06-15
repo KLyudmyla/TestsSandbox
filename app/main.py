@@ -1,6 +1,10 @@
 import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from app.agent import DocumentSearchAgent
 
 app = FastAPI(
