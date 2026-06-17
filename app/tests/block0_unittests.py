@@ -18,15 +18,15 @@ class TestCasesForBlock0(unittest.TestCase):
         usual_cost = self.calculator.calculate_prompt_cost(10000, 0.99)
         self.assertEqual(usual_cost, 9.9)
 
-    def test_calculate_prompt_cost_is_float_format(self):
+    def test_prompt_cost_result_is_float_format(self):
         result = self.calculator.calculate_prompt_cost(10000, 0.99)
         self.assertIsInstance(result, float)
 
-    def test_calculate_prompt_cost_result_is_positive(self):
+    def test_prompt_cost_result_is_positive(self):
         positive_cost = self.calculator.calculate_prompt_cost(10000, 0.99)
         self.assertGreater(positive_cost, 0)
 
-    def test_calculate_prompt_cost_result_rounding(self):
+    def test_prompt_cost_result_is_rounded(self):
         result = self.calculator.calculate_prompt_cost(10000, 0.1234567)
         self.assertAlmostEqual(result, 1.23457, places=5)
 
