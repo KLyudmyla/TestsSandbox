@@ -66,6 +66,4 @@ class TestCasesForBlock0(unittest.TestCase):
         welcome_msg = self.calculator.generate_welcome_system_prompt("")
         self.assertEqual(welcome_msg, "You are a helpful AI assistant.")
 
-if __name__ == '__main__':
-    unittest.main()
 
