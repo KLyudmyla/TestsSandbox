@@ -1,13 +1,5 @@
 import pytest
-
-
-# =====================================================================
-# Custom Exceptions for Corporate Business Logic
-# =====================================================================
-
-class ValidationError(Exception):
-    """Raised when user input fails validation rules."""
-    pass
+from app.ut_practice import ValidationError, validate_user_registration
 
 # =====================================================================
 # BLOCK 1: Data Validation & String Processing
@@ -17,36 +9,6 @@ class ValidationError(Exception):
 # - Use 'pytest.mark.parametrize' to efficiently cover multiple boundary values.
 # - Validate specific error messages caught by 'pytest.raises(ValidationError)'.
 # =====================================================================
-
-def validate_user_registration(username: str, email: str, age: int) -> bool:
-    """
-    Validates user registration data based on corporate business rules.
-
-    Rules:
-    - Username must be alphanumeric and between 3 and 15 characters long.
-    - Email must contain exactly one '@' and at least one '.' after '@'.
-    - Age must be between 18 and 99 (inclusive).
-
-    :param username: The username string to check.
-    :param email: The user email address.
-    :param age: The age of the user as an integer.
-    :return: True if validation passes.
-    :raises ValidationError: If any of the business rules are violated.
-    """
-    if not username or not (3 <= len(username) <= 15) or not username.isalnum():
-        raise ValidationError("Username must be alphanumeric and between 3 and 15 characters.")
-
-    if not email or "@" not in email or email.count("@") != 1:
-        raise ValidationError("Invalid email format: missing or multiple '@'.")
-
-    domain_part = email.split("@")[1]
-    if "." not in domain_part or domain_part.startswith(".") or domain_part.endswith("."):
-        raise ValidationError("Invalid email format: domain must contain a valid dot structure.")
-
-    if not isinstance(age, int) or not (18 <= age <= 99):
-        raise ValidationError("User must be between 18 and 99 years old.")
-
-    return True
 
 @pytest.mark.parametrize("username, email, age", [
         ("kate", "test@gmail.com", 18)

@@ -2,11 +2,7 @@ import unittest
 from unittest import mock
 from unittest.mock import MagicMock
 import requests
-
-
-class ThirdPartyServiceError(Exception):
-    """Raised when an external API integration fails or returns an unhealthy status."""
-    pass
+from app.ut_practice import ThirdPartyServiceError, WeatherAlertService
 
 # =====================================================================
 # BLOCK 6: Network Mocking Practice (Third-Party HTTP Requests)
@@ -17,37 +13,6 @@ class ThirdPartyServiceError(Exception):
 # - Use 'MagicMock' to simulate HTTP 200, 404, or 500 status codes and raw JSON responses.
 # - Use 'side_effect=requests.RequestException' to ensure proper handling of network timeout spikes.
 # =====================================================================
-
-class WeatherAlertService:
-    """
-    Fetches real-time critical weather status from a third-party global monitoring API
-    to determine if field automation tools should be paused.
-    """
-
-    def __init__(self, endpoint_url: str = "https://api.weather-service.external/v1/alert"):
-        self.endpoint_url = endpoint_url
-
-    def should_pause_operations(self) -> bool:
-        """
-        Sends an HTTP GET request to the external server.
-        Expects a JSON response like: {"status": "success", "alert_level": "RED"}
-
-        :return: True if the alert_level is 'RED' or 'ORANGE'.
-        :raises ThirdPartyServiceError: If HTTP status is not 200, or connection fails.
-        """
-        try:
-            response = requests.get(self.endpoint_url, timeout=5)
-
-            if response.status_code != 200:
-                raise ThirdPartyServiceError(f"External service returned status code {response.status_code}")
-
-            data = response.json()
-            alert_level = data.get("alert_level", "").upper()
-
-            return alert_level in ["RED", "ORANGE"]
-
-        except requests.RequestException as e:
-            raise ThirdPartyServiceError(f"Failed to connect to weather provider: {str(e)}")
 
 class TestWeatherAlertService(unittest.TestCase):
 

@@ -1,7 +1,6 @@
-from typing import Dict
 import unittest
 from unittest import mock
-
+from app.ut_practice import ConfigFileManager
 
 # =====================================================================
 # BLOCK 4: External System Simulation (File I/O)
@@ -11,38 +10,6 @@ from unittest import mock
 # - Utilize 'unittest.mock.mock_open' to fake file contents directly in memory.
 # - Patch the built-in 'open' function and assert behavior for missing or corrupted entries.
 # =====================================================================
-
-class ConfigFileManager:
-    """
-    Manages system configuration loading and parsing from local text files.
-    """
-
-    def __init__(self, file_path: str):
-        self.file_path = file_path
-
-    def load_config(self) -> Dict[str, str]:
-        """
-        Reads a configuration file line by line.
-
-        :return: A dictionary containing the parsed configuration key-value pairs.
-        :raises FileNotFoundError: If the configuration file does not exist.
-        :raises ValueError: If a non-comment line is corrupted and doesn't contain '='.
-        """
-        config_data = {}
-
-        with open(self.file_path, "r", encoding="utf-8") as file:
-            for line_num, line in enumerate(file, 1):
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-
-                if "=" not in line:
-                    raise ValueError(f"Corrupted config entry at line {line_num}: missing '=' sign.")
-
-                key, value = line.split("=", 1)
-                config_data[key.strip()] = value.strip()
-
-        return config_data
 
 class TestConfigFileManager(unittest.TestCase):
 
