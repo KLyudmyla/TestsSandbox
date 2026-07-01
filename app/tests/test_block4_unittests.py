@@ -64,5 +64,3 @@ class TestConfigFileManager(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             manager.load_config()
 
-if __name__ == "__main__":
-    unittest.main()

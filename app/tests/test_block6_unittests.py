@@ -1,4 +1,4 @@
-import unittest
+import pytest
 from unittest import mock
 from unittest.mock import MagicMock
 import requests
@@ -14,7 +14,7 @@ from app.ut_practice import ThirdPartyServiceError, WeatherAlertService
 # - Use 'side_effect=requests.RequestException' to ensure proper handling of network timeout spikes.
 # =====================================================================
 
-class TestWeatherAlertService(unittest.TestCase):
+class TestWeatherAlertService():
 
     @mock.patch.object(requests, 'get') # it is required to patch an object here to avoid incorrect target
     def test_status_code_200_with_red_alert_level(self, mock_get):
@@ -69,7 +69,7 @@ class TestWeatherAlertService(unittest.TestCase):
     @mock.patch.object(requests, "get", side_effect=ThirdPartyServiceError)  # raising ThirdPartyServiceError
     def test_raising_third_party_error_msg(self, mock_get):
         service = WeatherAlertService()
-        with self.assertRaises(ThirdPartyServiceError):
+        with pytest.raises(ThirdPartyServiceError):
             service.should_pause_operations()
 
     @mock.patch.object(requests, "get")  # verifying error message for codes != 200
@@ -78,9 +78,9 @@ class TestWeatherAlertService(unittest.TestCase):
         response_mock = MagicMock()
         response_mock.status_code = 404
         mock_get.return_value = response_mock
-        with self.assertRaises(ThirdPartyServiceError) as e:
+        with pytest.raises(ThirdPartyServiceError) as e:
             service.should_pause_operations()
-        self.assertIn("External service returned status code 404", str(e.exception))
+        assert "External service returned status code 404" in str(e.value)
 
     @mock.patch.object(requests, "get", side_effect=requests.exceptions.Timeout)  # verifying Timeout message
     def test_verifying_timeout_message_for_lost_connection(self, mock_get):
@@ -88,9 +88,6 @@ class TestWeatherAlertService(unittest.TestCase):
         response_mock = MagicMock()
         response_mock.status_code = 500
         mock_get.return_value = response_mock
-        with self.assertRaises(ThirdPartyServiceError) as e:
+        with pytest.raises(ThirdPartyServiceError) as e:
             service.should_pause_operations()
-        self.assertIn("Failed to connect to weather provider: ", str(e.exception))
-
-if __name__ == '__main__':
-    unittest.main()
+        assert "Failed to connect to weather provider: " in str(e.value)

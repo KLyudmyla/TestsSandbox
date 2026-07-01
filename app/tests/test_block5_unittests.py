@@ -1,6 +1,5 @@
 import pytest
 import re
-from typing import List, Dict, Any
 from app.ut_practice import FileUploadValidationError, FileUploadValidator
 
 # =====================================================================
@@ -57,6 +56,10 @@ class TestFileUploadValidator:
     def test_validate_file_upload_basic(self, my_files):
         validator = FileUploadValidator(max_files=3, max_total_size_mb=10.0)
         assert validator.validate_batch(my_files) is True
+
+    def test_validate_file_with_missing_key(self, file_with_missing_key):
+        validator = FileUploadValidator(max_files=3, max_total_size_mb=10.0)
+        assert validator.validate_batch(file_with_missing_key) is True
 
     def test_raising_exception_for_too_many_files(self, too_many_files):
         validator = FileUploadValidator(max_files=3, max_total_size_mb=10.0)
