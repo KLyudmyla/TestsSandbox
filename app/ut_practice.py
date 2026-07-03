@@ -362,10 +362,6 @@ class WeatherAlertService:
 # - Always use the 'await' keyword when calling asynchronous methods.
 # - Test both positive paths and asynchronous exception raising.
 # =====================================================================
-class ValidationError(Exception):
-    """Raised when user input fails validation rules."""
-    pass
-
 class AsyncAIAgentEvaluator:
     """
     Simulates an asynchronous evaluation pipeline for LLM outputs and RAG nodes.
