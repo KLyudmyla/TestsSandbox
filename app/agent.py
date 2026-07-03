@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict, Any
+from typing import Any
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
@@ -7,6 +7,7 @@ from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents import create_openai_tools_agent
 from langchain.agents.agent import AgentExecutor
+
 
 class DocumentSearchAgent:
     """
@@ -40,7 +41,7 @@ class DocumentSearchAgent:
         # Set up the execution engine
         self.agent_executor = self._create_agent_executor()
 
-    def upload_documents(self, texts: List[str]) -> None:
+    def upload_documents(self, texts: list[str]) -> None:
         """
         Ingests a list of raw texts into the local vector store for future retrieval.
 
@@ -94,7 +95,7 @@ class DocumentSearchAgent:
         # Return the executor responsible for running the agent loop
         return AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-    def ask(self, user_input: str, chat_history: List[Any] = None) -> Dict[str, Any]:
+    def ask(self, user_input: str, chat_history: list[Any] = None) -> dict[str, Any]:
         """
         Sends a user query to the agent and returns the generated answer.
 

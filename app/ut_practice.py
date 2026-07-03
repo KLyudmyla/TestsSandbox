@@ -1,7 +1,7 @@
 import re
 import requests
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import Any
 
 
 # =====================================================================
@@ -130,13 +130,13 @@ class LogParser:
     A utility class to parse server logs and extract severity levels and HTTP error codes.
     """
 
-    def __init__(self, raw_logs: List[str]):
+    def __init__(self, raw_logs: list[str]):
         """
         Initializes the parser with a list of raw log lines.
         """
         self.logs = raw_logs
 
-    def get_logs_by_level(self, level: str) -> List[str]:
+    def get_logs_by_level(self, level: str) -> list[str]:
         """
         Filters logs by severity level (e.g., 'INFO', 'WARNING', 'ERROR').
         Expects strict log format: 'YYYY-MM-DD HH:MM:SS [LEVEL] Message text'
@@ -158,7 +158,7 @@ class LogParser:
 
         return filtered_logs
 
-    def extract_error_codes(self) -> List[int]:
+    def extract_error_codes(self) -> list[int]:
         """
         Finds and extracts all HTTP error status codes (4xx and 5xx) inside log messages.
 
@@ -233,7 +233,7 @@ class ConfigFileManager:
     def __init__(self, file_path: str):
         self.file_path = file_path
 
-    def load_config(self) -> Dict[str, str]:
+    def load_config(self) -> dict[str, str]:
         """
         Reads a configuration file line by line.
 
@@ -277,7 +277,7 @@ class FileUploadValidator:
         self.max_total_size_mb = max_total_size_mb
         self.allowed_extensions = {".pdf", ".txt", ".docx"}
 
-    def validate_batch(self, files: List[Dict[str, Any]]) -> bool:
+    def validate_batch(self, files: list[dict[str, Any]]) -> bool:
         """
         Validates a list of file dictionaries.
         Each dictionary represents a file: {"name": "document.pdf", "size_mb": 2.5}
@@ -351,3 +351,55 @@ class WeatherAlertService:
 
         except requests.RequestException as e:
             raise ThirdPartyServiceError(f"Failed to connect to weather provider: {str(e)}")
+
+
+# =====================================================================
+# BLOCK 7: Asynchronous Testing Practice (Async/Await Logic)
+# ---------------------------------------------------------------------
+# Testing Guidance:
+# - Use 'pytest-asyncio' library to run asynchronous tests.
+# - Mark your test functions with '@pytest.mark.asyncio' decorator.
+# - Always use the 'await' keyword when calling asynchronous methods.
+# - Test both positive paths and asynchronous exception raising.
+# =====================================================================
+class ValidationError(Exception):
+    """Raised when user input fails validation rules."""
+    pass
+
+class AsyncAIAgentEvaluator:
+    """
+    Simulates an asynchronous evaluation pipeline for LLM outputs and RAG nodes.
+    """
+
+    async def async_send_prompt(self, prompt: str) -> dict[str, Any]:
+        """
+        Simulates an asynchronous HTTP request to an LLM provider.
+
+        :param prompt: The input text prompt for the AI model.
+        :return: A dictionary containing the mock response and evaluation status.
+        :raises ValueError: If the prompt is empty or just spaces.
+        """
+        if not prompt or not prompt.strip():
+            raise ValueError("Prompt cannot be empty.")
+
+        # Simulating network latency in async architecture
+        # In actual tests, this would be mocked, but here we test the async wrapper flow.
+        return {
+            "output": f"Refined response for: {prompt.strip()}",
+            "status": "completed",
+            "tokens_used": len(prompt.split()) * 2
+        }
+
+    async def async_validate_token_limit(self, tokens_count: int, max_limit: int) -> bool:
+        """
+        Asynchronously checks if the generated response stays within context window limits.
+
+        :param tokens_count: Number of tokens in the response.
+        :param max_limit: Maximum allowed tokens for the selected model.
+        :return: True if valid.
+        :raises ValidationError: If the token count exceeds the maximum limit.
+        """
+        if tokens_count > max_limit:
+            raise ValidationError(f"Token limit exceeded. Found {tokens_count}, max allowed is {max_limit}.")
+
+        return True
