@@ -71,27 +71,29 @@ In the PyCharm terminal, run the following command to install all required libra
 
 ```bash
 pip install -r requirements.txt
-
-```
-
-*If you haven't created the `requirements.txt` file yet, create it in the root directory and paste this list:*
-
-```text
-langchain
-langchain-openai
-langchain-community
-chromadb
-fastapi
-uvicorn
-pydantic
-pytest
-requests
-
 ```
 
 ---
 
-## 🔑 Step 3: Setting Up the OpenAI API Key in Windows
+## 🐳 Step 3: Spinning up PostgreSQL via Docker
+We use Docker Desktop to run a real PostgreSQL database for our integration tests. This keeps your local Windows system clean and guarantees identical testing environments.
+
+1. Make sure Docker Desktop is running on your Windows machine.
+2. Open your terminal in the root directory of the project (where docker-compose.yml is located).
+3. Start the PostgreSQL database container in background mode:
+
+```cmd
+docker compose up -d
+```
+4. To verify that the database container has successfully started, run:
+
+```cmd
+docker ps
+```
+You should see a running container named integration_test_db mapped to port 5432.
+
+
+## 🔑 Step 4: Setting Up the OpenAI API Key in Windows
 
 Our agent requires an API key to communicate with the language model. We pass it via environment variables so we don't accidentally hardcode it.
 
@@ -117,10 +119,9 @@ To avoid typing the key every time:
 * Value: `your-actual-openai-api-key`
 
 
-
 ---
 
-## 🏃 Step 4: Launching the FastAPI Server
+## 🏃 Step 5: Launching the FastAPI Server
 
 You can start the application using the PyCharm Terminal. Run the following command from the root directory:
 
@@ -138,7 +139,7 @@ INFO: Uvicorn running on [http://127.0.0.1:8000](http://127.0.0.1:8000) (Press C
 
 ---
 
-## 🧪 Step 5: Manual Testing via Swagger UI (Smoke Test)
+## 🧪 Step 6: Manual Testing via Swagger UI (Smoke Test)
 
 When the server runs, FastAPI automatically generates an interactive API documentation page.
 
