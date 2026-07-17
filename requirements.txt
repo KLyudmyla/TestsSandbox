@@ -9,3 +9,6 @@ pytest==8.3.2
 pytest-asyncio==0.23.8
 requests==2.32.3
 python-dotenv
+sqlalchemy
+psycopg2-binary
+httpx
