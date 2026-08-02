@@ -1,11 +1,12 @@
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from httpx import Client
 from app.it_practice import DATABASE_URL, Base
+from app.main import app
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(autouse=True) # to clean db after each test, use autouse=True
 def engine():
     engine = create_engine(DATABASE_URL)
     Base.metadata.create_all(bind=engine)
@@ -21,5 +22,5 @@ def db_session(engine):
 
 @pytest.fixture
 def client():
-    with Client(base_url="http://127.0.0.1:8000", headers={"Content-Type": "application/json"}) as test_client:
+    with TestClient(app) as test_client:
         yield test_client
