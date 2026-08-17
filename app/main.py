@@ -1,7 +1,8 @@
 import os
 from fastapi import Depends, FastAPI, HTTPException
-from pydantic import BaseModel
 from dotenv import load_dotenv
+from pathlib import Path
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 load_dotenv()
@@ -26,21 +27,22 @@ if not api_key:
 agent = DocumentSearchAgent(openai_api_key=api_key)
 
 # Mock corporate knowledge base to preload into our in-memory vector store on startup
-MOCK_KNOWLEDGE_BASE = [
-    "Company remote work policy: Employees can work remotely up to 3 days a week.",
-    "The office kitchen is cleared every Friday at 4 PM. Do not leave your food there.",
-    "Our primary tech stack consists of Python, FastAPI, and React.",
-    "To request a new laptop, fill out the form IT-01 on the internal portal."
-]
+KNOWLEDGE_BASE_DIR = Path(__file__).resolve().parent / "knowledge_base"
 
 
 @app.on_event("startup")
 def preload_documents():
     """
-    Preloads mock documents into the agent's vector store when the server starts.
+    Loads knowledge base documents into the vector store when the server starts.
     """
-    print("Preloading mock documents into the vector store...")
-    agent.upload_documents(MOCK_KNOWLEDGE_BASE)
+    print("Loading knowledge base documents...")
+    for file_path in KNOWLEDGE_BASE_DIR.glob("*.txt"):
+        text = file_path.read_text(encoding="utf-8")
+        agent.upload_document(
+            text=text,
+            source=file_path.name,
+        )
+
     print("Documents successfully loaded!")
 
 

@@ -17,7 +17,7 @@ from ragas import evaluate
 from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
 from ragas.metrics import AnswerRelevancy, ContextPrecision, ContextRecall, Faithfulness
 
-from app.evals.ragas_config import RAGASConfig
+from tests.evals import RAGASConfig
 
 logger = logging.getLogger(__name__)
 
@@ -114,29 +114,3 @@ def run_evaluation(
                 if column.startswith("faithfulness") or column.startswith("answer_relevancy") or column.startswith("context"):
                     score_map[column] = float(frame[column].iloc[0])
     return EvaluationResult(metrics=score_map, summary=json.dumps(score_map, indent=2))
-
-
-class EvalRunner:
-    """Reusable assistant for building datasets and evaluating them."""
-
-    def __init__(self, config: type[RAGASConfig] | None = None) -> None:
-        self.config = config or RAGASConfig
-        self.logger = logger
-
-    def evaluate_example(
-        self,
-        question: str,
-        contexts: List[str],
-        reference_answer: str,
-    ) -> EvaluationResult:
-        return run_evaluation(question, contexts, reference_answer, config=self.config)
-
-    def evaluate_records(self, records: List[Dict[str, Any]]) -> EvaluationDataset:
-        return build_evaluation_dataset(records)
-
-    def save_results(self, result: EvaluationResult, output_path: Optional[str] = None) -> Path:
-        """Persist evaluation output to a JSON file."""
-        path = Path(output_path or self.config.OUTPUT_DIR) / self.config.RESULTS_FILE
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(result.metrics, indent=2), encoding="utf-8")
-        return path
