@@ -41,14 +41,12 @@ class DocumentSearchAgent:
         # Set up the execution engine
         self.agent_executor = self._create_agent_executor()
 
-    def upload_documents(self, texts: list[str]) -> None:
-        """
-        Ingests a list of raw texts into the local vector store for future retrieval.
-
-        :param texts: A list of strings representing document contents.
-        """
-        documents = [Document(page_content=text, metadata={"source": f"doc_{i}"}) for i, text in enumerate(texts)]
-        self.vector_store.add_documents(documents)
+    def upload_document(self, text: str, source: str) -> None:
+        document = Document(
+            page_content=text,
+            metadata={"source": source},
+        )
+        self.vector_store.add_documents([document])
 
     def _create_agent_executor(self) -> AgentExecutor:
         """
@@ -70,8 +68,15 @@ class DocumentSearchAgent:
                 return "No relevant documents found."
 
             # Combine snippets into a single context string
-            context = "\n---\n".join([d.page_content for d in docs])
-            return f"Found relevant information:\n{context}"
+            results = []
+
+            for doc in docs:
+                results.append(
+                    f"Source: {doc.metadata['source']}\n"
+                    f"Content: {doc.page_content}"
+                )
+
+            return "\n---\n".join(results)
 
         # Define the toolset available to the agent
         tools = [search_documents]
