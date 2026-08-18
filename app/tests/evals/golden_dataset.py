@@ -7,7 +7,7 @@ MY_DATASET=[
     "answer": "",  # Populated at runtime by your RAG pipeline
     "ground_truth": "Employees can work remotely up to 3 days a week.",
     "metadata": {
-      "source_docs": ["HR_Policy_RemoteWork.pdf"],
+      "source_docs": ["hr_remote_work.txt"],
       "difficulty": "easy",
       "category": "HR Policy",
       "evaluation_tags": ["fact_retrieval", "single_doc"]
@@ -21,7 +21,7 @@ MY_DATASET=[
     "answer": "",
     "ground_truth": "The primary tech stack consists of Python, FastAPI, and React.",
     "metadata": {
-      "source_docs": ["Engineering_Guidelines.md"],
+      "source_docs": ["engineering_stack.txt"],
       "difficulty": "easy",
       "category": "Engineering",
       "evaluation_tags": ["fact_retrieval", "tech_stack"]
@@ -36,7 +36,7 @@ MY_DATASET=[
     "answer": "",
     "ground_truth": "To request a new laptop, you must fill out form IT-01 on the internal portal. Employees can work remotely up to 3 days a week, so you can submit this request online on your remote work days.",
     "metadata": {
-      "source_docs": ["IT_Procurement.pdf", "HR_Policy_RemoteWork.pdf"],
+      "source_docs": ["it_laptop_request.txt", "hr_remote_work.txt"],
       "difficulty": "hard",
       "category": "IT / HR Cross-functional",
       "evaluation_tags": ["multi_hop", "synthesis", "multi_doc"]
@@ -62,7 +62,7 @@ MY_DATASET=[
     "answer": "",
     "ground_truth": "Yes, you can leave food on Thursday night, but you must remove it before the kitchen is cleared at 4 PM on Friday.",
     "metadata": {
-      "source_docs": ["Office_Rules_Kitchen.pdf"],
+      "source_docs": ["office_kitchen.txt"],
       "difficulty": "medium",
       "category": "Office Management",
       "evaluation_tags": ["reasoning", "implicit_logic"]
@@ -76,7 +76,7 @@ MY_DATASET=[
     "answer": "",
     "ground_truth": "You need to fill out form IT-01 on the internal portal to request a new laptop.",
     "metadata": {
-      "source_docs": ["IT_Procurement.pdf"],
+      "source_docs": ["it_laptop_request.txt"],
       "difficulty": "easy",
       "category": "IT Support",
       "evaluation_tags": ["fact_retrieval", "entity_extraction"]
@@ -90,7 +90,7 @@ MY_DATASET=[
     "answer": "",
     "ground_truth": "That is incorrect. The company policy states that employees can work remotely up to 3 days a week, not 4.",
     "metadata": {
-      "source_docs": ["HR_Policy_RemoteWork.pdf"],
+      "source_docs": ["hr_remote_work.txt"],
       "difficulty": "hard",
       "category": "HR Policy",
       "evaluation_tags": ["false_premise", "error_correction"]
@@ -128,7 +128,7 @@ MY_DATASET=[
     "answer": "",
     "ground_truth": "Our primary tech stack consists of Python, FastAPI, and React. Django is not mentioned as part of the primary tech stack.",
     "metadata": {
-      "source_docs": ["Engineering_Guidelines.md"],
+      "source_docs": ["engineering_stack.txt"],
       "difficulty": "medium",
       "category": "Engineering",
       "evaluation_tags": ["negative_inference", "constraint_validation"]

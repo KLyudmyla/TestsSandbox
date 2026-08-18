@@ -17,7 +17,7 @@ from ragas import evaluate
 from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
 from ragas.metrics import AnswerRelevancy, ContextPrecision, ContextRecall, Faithfulness
 
-from tests.evals import RAGASConfig
+from app.tests.evals.ragas_config import RAGASConfig
 
 logger = logging.getLogger(__name__)
 
