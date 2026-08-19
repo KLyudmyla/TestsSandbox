@@ -179,6 +179,22 @@ When the server runs, FastAPI automatically generates an interactive API documen
 
 **Next Learning Stage:** We will start writing automated tests using `pytest` and learn how to use **mocks** so we can test this exact endpoint automatically, instantly, and for free!
 
+## Local RAG Evaluation
+
+The evaluation dataset and runner live under `app/tests/evals/`. The runner sends each question through the production agent, captures retrieved contexts, applies deterministic checks, and optionally scores the batch with RAGAS.
+
+```powershell
+python -m app.tests.evals.run_evals --skip-ragas
+```
+
+Run the complete evaluation, including Faithfulness, Answer Relevancy, Context Precision, and Context Recall:
+
+```powershell
+python -m app.tests.evals.run_evals
+```
+
+Each run writes `results.json`, `results.csv`, and `summary.md` to a timestamped directory under `results/`. Live RAGAS scoring requires an OpenAI API key and may incur API usage costs.
+
 ```
 
 ```

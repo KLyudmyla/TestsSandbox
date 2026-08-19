@@ -12,4 +12,5 @@ python-dotenv
 sqlalchemy
 psycopg2-binary
 httpx
+pandas
 ragas==0.1.20

@@ -33,6 +33,7 @@ class DocumentSearchAgent:
 
         # Initialize Embeddings and an in-memory Vector Store (Chroma)
         self.embeddings = OpenAIEmbeddings()
+        self._last_retrieved_documents: list[Document] = []
         self.vector_store = Chroma(
             collection_name="local_documents",
             embedding_function=self.embeddings
@@ -47,6 +48,21 @@ class DocumentSearchAgent:
             metadata={"source": source},
         )
         self.vector_store.add_documents([document])
+
+    def retrieve_documents(self, query: str, k: int = 2) -> list[Document]:
+        """Retrieve documents using the same vector-store settings as the agent."""
+        return self.vector_store.similarity_search(query, k=k)
+
+    def ask_with_context(self, user_input: str, chat_history: list[Any] = None) -> dict[str, Any]:
+        """Return the generated answer together with contexts for evaluation."""
+        self._last_retrieved_documents = []
+        result = self.ask(user_input=user_input, chat_history=chat_history)
+        documents = self._last_retrieved_documents
+        return {
+            "output": result.get("output", ""),
+            "contexts": [document.page_content for document in documents],
+            "sources": [document.metadata.get("source", "") for document in documents],
+        }
 
     def _create_agent_executor(self) -> AgentExecutor:
         """
@@ -64,6 +80,7 @@ class DocumentSearchAgent:
             """
             # Retrieve top 2 most relevant document snippets
             docs = self.vector_store.similarity_search(query, k=2)
+            self._last_retrieved_documents = docs
             if not docs:
                 return "No relevant documents found."
 

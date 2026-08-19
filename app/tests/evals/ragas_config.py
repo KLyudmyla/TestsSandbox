@@ -13,6 +13,9 @@ class RAGASConfig:
 
     # Embeddings Configuration
     EMBEDDINGS_MODEL = os.getenv("RAGAS_EMBEDDINGS_MODEL", "text-embedding-3-small")
+    TEMPERATURE = float(os.getenv("RAGAS_TEMPERATURE", "0"))
+    DATASET_VERSION = os.getenv("RAGAS_DATASET_VERSION", "v1")
+    CORPUS_VERSION = os.getenv("RAGAS_CORPUS_VERSION", "v1")
 
     # Evaluation Metrics to use
     METRICS = {
@@ -29,9 +32,9 @@ class RAGASConfig:
 
 
     @staticmethod
-    def validate() -> bool:
+    def validate(require_api_key: bool = True) -> bool:
         """Validate required configuration."""
-        if not RAGASConfig.OPENAI_API_KEY:
+        if require_api_key and not RAGASConfig.OPENAI_API_KEY:
             raise ValueError("OPENAI_API_KEY is not set in environment variables!")
         return True
 
