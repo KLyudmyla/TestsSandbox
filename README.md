@@ -35,6 +35,7 @@ llm-agent-testing/
 ---
 
 ## ⚙️ Step 1: Project Setup in PyCharm (Windows 11)
+PRECONDITION: use python == 3.12 as it will affect the reports scoring
 
 1. **Open the Project:** Launch PyCharm, click **Open**, and select your `llm-agent-testing` folder.
 2. **Create a Virtual Environment (venv):**
