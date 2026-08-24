@@ -17,7 +17,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--skip-ragas", action="store_true", help="Run deterministic checks without live RAGAS scoring.")
     parser.add_argument("--limit", type=int, help="Evaluate only the first N records.")
     parser.add_argument("--category", help="Evaluate only one dataset category.")
-    parser.add_argument("--output-dir", type=Path, default=RAGASConfig.OUTPUT_DIR)
+    project_root = Path(__file__).resolve().parents[3]
+    default_output_dir = project_root / RAGASConfig.OUTPUT_DIR
+    parser.add_argument("--output-dir", type=Path, default=default_output_dir)
     return parser
 
 

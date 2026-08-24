@@ -1,7 +1,7 @@
 langchain==0.2.16
 langchain-openai==0.1.22
 langchain-community==0.2.12
-chromadb==0.5.5
+chromadb==0.5.3
 fastapi==0.112.2
 uvicorn==0.30.6
 pydantic==2.9.2
@@ -13,4 +13,5 @@ sqlalchemy
 psycopg2-binary
 httpx
 pandas
+datasets>=2.14.5,<6
 ragas==0.1.20

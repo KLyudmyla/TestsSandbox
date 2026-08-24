@@ -1,4 +1,5 @@
 from app.tests.evals.eval_runner import run_batch
+from app.tests.evals.ragas_config import RAGASConfig, RAGASMetricsDescriptions
 from app.tests.evals.reports import write_reports
 
 
@@ -36,6 +37,13 @@ def test_run_batch_captures_agent_result_and_checks():
         "expected_behavior": True,
     }
     assert results[0].status == "passed"
+
+
+def test_ragas_config_exposes_only_supported_metrics():
+    expected_metrics = {"faithfulness", "answer_relevancy", "context_precision", "context_recall"}
+
+    assert set(RAGASConfig.METRICS) == expected_metrics
+    assert set(RAGASMetricsDescriptions.DESCRIPTIONS) == expected_metrics
 
 
 def test_run_batch_accepts_mocked_ragas_runner():

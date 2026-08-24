@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import asdict, dataclass, field
 from typing import Any, Callable
 
@@ -38,16 +39,26 @@ def validate_record(record: dict[str, Any], index: int) -> None:
 
 
 def build_evaluation_dataset(records: list[dict[str, Any]], answers: list[str] | None = None) -> Any:
-    """Map repository records to RAGAS samples, importing RAGAS on demand."""
+    """Map repository records to RAGAS samples, importing RAGAS on demand.
+    
+    Maps input records to RAGAS SingleTurnSample with proper field normalization:
+    - reference_contexts (input) -> retrieved_contexts (RAGAS)
+    - question (input) -> user_input (RAGAS)
+    - answer (input) -> response (RAGAS)
+    - ground_truth (input) -> reference (RAGAS)
+    """
     from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
 
     samples = []
     for index, record in enumerate(records):
-        answer = answers[index] if answers else record.get("answer", "")
+        # Use provided answers or fall back to record answer
+        answer = answers[index] if answers and index < len(answers) else record.get("answer", "")
+        # Map reference_contexts from input to retrieved_contexts expected by RAGAS
+        contexts = record.get("retrieved_contexts") or record.get("reference_contexts", [])
         samples.append(
             SingleTurnSample(
                 user_input=record["question"],
-                retrieved_contexts=record.get("retrieved_contexts", []),
+                retrieved_contexts=contexts,
                 response=answer,
                 reference=record["ground_truth"],
             )
@@ -59,15 +70,24 @@ def build_metric_instances(config: type[RAGASConfig] = RAGASConfig) -> list[Any]
     """Create enabled RAGAS metrics using the installed RAGAS API."""
     from langchain_openai import ChatOpenAI, OpenAIEmbeddings
     from ragas import metrics as ragas_metrics
+    from ragas.embeddings import LangchainEmbeddingsWrapper
+    from ragas.llms import LangchainLLMWrapper
+    from ragas.run_config import RunConfig
 
-    judge_llm = ChatOpenAI(model=config.LLM_MODEL, temperature=config.TEMPERATURE)
-    judge_embeddings = OpenAIEmbeddings(model=config.EMBEDDINGS_MODEL)
+    run_config = RunConfig(timeout=120, max_retries=3, max_wait=30, max_workers=4, log_tenacity=True)
+    judge_llm = LangchainLLMWrapper(
+        ChatOpenAI(model=config.LLM_MODEL, temperature=config.TEMPERATURE, timeout=120, max_retries=3),
+        run_config=run_config,
+    )
+    judge_embeddings = LangchainEmbeddingsWrapper(
+        OpenAIEmbeddings(model=config.EMBEDDINGS_MODEL, timeout=120, max_retries=3),
+        run_config=run_config,
+    )
     metric_types = {
         "faithfulness": {"llm": judge_llm},
         "answer_relevancy": {"llm": judge_llm, "embeddings": judge_embeddings},
         "context_precision": {"llm": judge_llm},
-        "context_recall": {"llm": judge_llm},
-        "context_relevancy": {"llm": judge_llm},
+        "context_recall": {"llm": judge_llm}
     }
     instances = []
     for name, enabled in config.METRICS.items():
@@ -81,8 +101,18 @@ def build_metric_instances(config: type[RAGASConfig] = RAGASConfig) -> list[Any]
 
 
 def _as_score(value: Any) -> float | None:
+    """Convert a RAGAS metric value to a bounded float score in [0.0, 1.0].
+    
+    Returns:
+        A float score bounded to [0.0, 1.0], or None if the value cannot be converted.
+    """
     try:
-        return float(value)
+        score = float(value)
+        # Ensure score is finite (not inf, -inf, or nan)
+        if not math.isfinite(score):
+            return None
+        # Clamp to [0.0, 1.0] range
+        return max(0.0, min(1.0, score))
     except (TypeError, ValueError):
         return None
 
@@ -100,21 +130,49 @@ def _matches_expected_behavior(answer: str, record: dict[str, Any]) -> bool:
 
 
 def run_ragas(records: list[dict[str, Any]], answers: list[str], config: type[RAGASConfig] = RAGASConfig) -> list[dict[str, float | None]]:
-    """Run enabled RAGAS metrics and return one score map per record."""
+    """Run enabled RAGAS metrics and return one continuous-score map per record.
+    
+    Args:
+        records: Input evaluation records with required fields.
+        answers: Evaluated answers corresponding to each record.
+        config: RAGAS configuration class.
+        
+    Returns:
+        List of score maps (one per record) with metric names as keys and scores [0.0, 1.0] as values.
+        Returns empty score maps if no metrics are enabled or evaluation fails.
+    """
     config.validate(require_api_key=True)
+    
+    if not records or not answers:
+        return [{} for _ in records] if records else []
+    
     from ragas import evaluate
 
-    metrics = build_metric_instances(config)
-    if not metrics:
-        return [{} for _ in records]
+    try:
+        metrics = build_metric_instances(config)
+        if not metrics:
+            return [{} for _ in records]
 
-    dataset = build_evaluation_dataset(records, answers)
-    result = evaluate(dataset=dataset, metrics=metrics, show_progress=False)
-    frame = result.to_pandas()
-    score_maps = []
-    for _, row in frame.iterrows():
-        score_maps.append({column: _as_score(row[column]) for column in frame.columns if column in config.METRICS})
-    return score_maps
+        dataset = build_evaluation_dataset(records, answers)
+        result = evaluate(dataset=dataset, metrics=metrics, show_progress=False)
+        frame = result.to_pandas()
+        
+        score_maps = []
+        for _, row in frame.iterrows():
+            score_map = {}
+            for metric_name in config.METRICS.keys():
+                if metric_name in frame.columns:
+                    raw_value = row[metric_name]
+                    score = _as_score(raw_value)
+                    if score is not None:
+                        score_map[metric_name] = score
+            score_maps.append(score_map)
+        
+        return score_maps
+    except Exception as exc:
+        # Return empty score maps on evaluation failure
+        print(f"Warning: RAGAS evaluation failed: {exc}")
+        return [{} for _ in records]
 
 
 def run_batch(
