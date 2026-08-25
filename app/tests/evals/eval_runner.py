@@ -1,116 +1,246 @@
-"""RAGAS-compatible evaluation runner for the sandbox project.
-
-This module bridges the repository's existing evaluation dataset format with
-RAGAS objects so the same records can be reused for local experiments and
-future production-style evaluation runs.
-"""
+"""Batch evaluation orchestration for the local RAG agent."""
 
 from __future__ import annotations
 
 import json
-import logging
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-
-from ragas import evaluate
-from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
-from ragas.metrics import AnswerRelevancy, ContextPrecision, ContextRecall, Faithfulness
+import math
+from dataclasses import asdict, dataclass, field
+from typing import Any, Callable
 
 from app.tests.evals.ragas_config import RAGASConfig
+from app.tests.evals.retrieval import expected_sources_are_retrieved, normalize_agent_result
 
-logger = logging.getLogger(__name__)
+REQUIRED_FIELDS = {"question", "ground_truth", "reference_contexts", "metadata"}
 
 
 @dataclass
-class RetrievalResult:
+class EvaluationCaseResult:
+    case_id: str
     question: str
-    context: List[str]
+    category: str
+    difficulty: str
+    answer: str = ""
+    ground_truth: str = ""
+    reference_contexts: list[str] = field(default_factory=list)
+    contexts: list[str] = field(default_factory=list)
+    sources: list[str] = field(default_factory=list)
+    metrics: dict[str, float | None] = field(default_factory=dict)
+    checks: dict[str, bool] = field(default_factory=dict)
+    status: str = "passed"
+    error: str | None = None
 
 
-@dataclass
-class GenerationResult:
-    answer: str
-    raw_output: Optional[str] = None
+def validate_record(record: dict[str, Any], index: int) -> None:
+    missing = REQUIRED_FIELDS - record.keys()
+    if missing:
+        raise ValueError(f"Record {index} is missing fields: {', '.join(sorted(missing))}")
+    if not isinstance(record["reference_contexts"], list):
+        raise TypeError(f"Record {index} reference_contexts must be a list.")
 
 
-@dataclass
-class EvaluationResult:
-    metrics: Dict[str, float]
-    summary: Optional[str] = None
+def build_evaluation_dataset(records: list[dict[str, Any]], answers: list[str] | None = None) -> Any:
+    """Map repository records to RAGAS samples, importing RAGAS on demand.
+    
+    Maps input records to RAGAS SingleTurnSample with proper field normalization:
+    - reference_contexts (input) -> retrieved_contexts (RAGAS)
+    - question (input) -> user_input (RAGAS)
+    - answer (input) -> response (RAGAS)
+    - ground_truth (input) -> reference (RAGAS)
+    """
+    from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
 
-
-def build_evaluation_dataset(records: List[Dict[str, Any]]) -> EvaluationDataset:
-    """Map repository-style records to RAGAS SingleTurnSample objects."""
-    samples: List[SingleTurnSample] = []
-    for record in records:
+    samples = []
+    for index, record in enumerate(records):
+        # Use provided answers or fall back to record answer
+        answer = answers[index] if answers and index < len(answers) else record.get("answer", "")
+        # Map reference_contexts from input to retrieved_contexts expected by RAGAS
+        contexts = record.get("retrieved_contexts") or record.get("reference_contexts", [])
         samples.append(
             SingleTurnSample(
-                user_input=record.get("question"),
-                retrieved_contexts=record.get("contexts") or [],
-                response=record.get("answer") or "",
-                reference=record.get("ground_truth"),
-                rubric=record.get("metadata") or {},
+                user_input=record["question"],
+                retrieved_contexts=contexts,
+                response=answer,
+                reference=record["ground_truth"],
             )
         )
     return EvaluationDataset(samples=samples)
 
 
-def build_metric_instances(config: type[RAGASConfig] | None = None) -> List[Any]:
-    """Create RAGAS metric instances based on the config flags."""
-    cfg = config or RAGASConfig
-    if not getattr(cfg, "validate", None):
-        raise ValueError("RAGASConfig must expose a validate() method")
-    cfg.validate()
+def build_metric_instances(config: type[RAGASConfig] = RAGASConfig) -> list[Any]:
+    """Create enabled RAGAS metrics using the installed RAGAS API."""
+    from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+    from ragas import metrics as ragas_metrics
+    from ragas.embeddings import LangchainEmbeddingsWrapper
+    from ragas.llms import LangchainLLMWrapper
+    from ragas.run_config import RunConfig
 
-    metrics: List[Any] = []
-    if cfg.METRICS.get("faithfulness"):
-        metrics.append(Faithfulness())
-    if cfg.METRICS.get("answer_relevancy"):
-        metrics.append(AnswerRelevancy())
-    if cfg.METRICS.get("context_precision"):
-        metrics.append(ContextPrecision())
-    if cfg.METRICS.get("context_recall"):
-        metrics.append(ContextRecall())
-    return metrics
-
-
-def generate_answer(retrieval_result: RetrievalResult) -> GenerationResult:
-    """Create a placeholder generation result for the current example."""
-    logger.debug("Generating answer for question: %s", retrieval_result.question)
-    answer = retrieval_result.context[0] if retrieval_result.context else ""
-    return GenerationResult(answer=answer, raw_output=answer)
-
-
-def run_evaluation(
-    question: str,
-    contexts: List[str],
-    reference_answer: str,
-    config: type[RAGASConfig] | None = None,
-) -> EvaluationResult:
-    """Run a single-example evaluation flow using a RAGAS-compatible shape."""
-    retrieval_result = RetrievalResult(question=question, context=contexts)
-    generation_result = generate_answer(retrieval_result)
-
-    sample = SingleTurnSample(
-        user_input=question,
-        retrieved_contexts=contexts,
-        response=generation_result.answer,
-        reference=reference_answer,
+    run_config = RunConfig(timeout=120, max_retries=3, max_wait=30, max_workers=4, log_tenacity=True)
+    judge_llm = LangchainLLMWrapper(
+        ChatOpenAI(model=config.LLM_MODEL, temperature=config.TEMPERATURE, timeout=120, max_retries=3),
+        run_config=run_config,
     )
+    judge_embeddings = LangchainEmbeddingsWrapper(
+        OpenAIEmbeddings(model=config.EMBEDDINGS_MODEL, timeout=120, max_retries=3),
+        run_config=run_config,
+    )
+    metric_types = {
+        "faithfulness": {"llm": judge_llm},
+        "answer_relevancy": {"llm": judge_llm, "embeddings": judge_embeddings},
+        "context_precision": {"llm": judge_llm},
+        "context_recall": {"llm": judge_llm}
+    }
+    instances = []
+    for name, enabled in config.METRICS.items():
+        if not enabled:
+            continue
+        metric_type = getattr(ragas_metrics, "".join(part.title() for part in name.split("_")), None)
+        if metric_type is None:
+            raise ValueError(f"Enabled RAGAS metric is unavailable: {name}")
+        instances.append(metric_type(**metric_types[name]))
+    return instances
 
-    metrics = build_metric_instances(config)
-    dataset = EvaluationDataset(samples=[sample])
 
-    if not metrics:
-        return EvaluationResult(metrics={}, summary="No enabled metrics were configured.")
+def _as_score(value: Any) -> float | None:
+    """Convert a RAGAS metric value to a bounded float score in [0.0, 1.0].
+    
+    Returns:
+        A float score bounded to [0.0, 1.0], or None if the value cannot be converted.
+    """
+    try:
+        score = float(value)
+        # Ensure score is finite (not inf, -inf, or nan)
+        if not math.isfinite(score):
+            return None
+        # Clamp to [0.0, 1.0] range
+        return max(0.0, min(1.0, score))
+    except (TypeError, ValueError):
+        return None
 
-    result = evaluate(dataset=dataset, metrics=metrics, show_progress=False)
-    score_map: Dict[str, float] = {}
-    if hasattr(result, "to_pandas"):
+
+def _matches_expected_behavior(answer: str, record: dict[str, Any]) -> bool:
+    tags = record.get("metadata", {}).get("evaluation_tags", [])
+    refusal_tags = {"refusal_check", "prompt_injection", "out_of_scope", "domain_boundary"}
+    if not refusal_tags.intersection(tags):
+        return bool(answer.strip())
+    refusal_markers = ("cannot", "can't", "do not have", "don't have", "only answer", "not enough information")
+    normalized_answer = answer.casefold()
+    has_refusal = any(marker in normalized_answer for marker in refusal_markers)
+    forbidden_claims = [claim.casefold() for claim in record.get("forbidden_claims", [])]
+    return has_refusal and not any(claim in normalized_answer for claim in forbidden_claims)
+
+
+def run_ragas(records: list[dict[str, Any]], answers: list[str], config: type[RAGASConfig] = RAGASConfig) -> list[dict[str, float | None]]:
+    """Run enabled RAGAS metrics and return one continuous-score map per record.
+    
+    Args:
+        records: Input evaluation records with required fields.
+        answers: Evaluated answers corresponding to each record.
+        config: RAGAS configuration class.
+        
+    Returns:
+        List of score maps (one per record) with metric names as keys and scores [0.0, 1.0] as values.
+        Returns empty score maps if no metrics are enabled or evaluation fails.
+    """
+    config.validate(require_api_key=True)
+    
+    if not records or not answers:
+        return [{} for _ in records] if records else []
+    
+    from ragas import evaluate
+
+    try:
+        metrics = build_metric_instances(config)
+        if not metrics:
+            return [{} for _ in records]
+
+        dataset = build_evaluation_dataset(records, answers)
+        result = evaluate(dataset=dataset, metrics=metrics, show_progress=False)
         frame = result.to_pandas()
-        if not frame.empty:
-            for column in frame.columns:
-                if column.startswith("faithfulness") or column.startswith("answer_relevancy") or column.startswith("context"):
-                    score_map[column] = float(frame[column].iloc[0])
-    return EvaluationResult(metrics=score_map, summary=json.dumps(score_map, indent=2))
+        
+        score_maps = []
+        for _, row in frame.iterrows():
+            score_map = {}
+            for metric_name in config.METRICS.keys():
+                if metric_name in frame.columns:
+                    raw_value = row[metric_name]
+                    score = _as_score(raw_value)
+                    if score is not None:
+                        score_map[metric_name] = score
+            score_maps.append(score_map)
+        
+        return score_maps
+    except Exception as exc:
+        # Return empty score maps on evaluation failure
+        print(f"Warning: RAGAS evaluation failed: {exc}")
+        return [{} for _ in records]
+
+
+def run_batch(
+    records: list[dict[str, Any]],
+    agent: Any | None = None,
+    ragas_runner: Callable[[list[dict[str, Any]], list[str]], list[dict[str, float | None]]] | None = None,
+) -> list[EvaluationCaseResult]:
+    """Evaluate records with the production agent and local deterministic checks."""
+    results: list[EvaluationCaseResult] = []
+    answers: list[str] = []
+    normalized_records: list[dict[str, Any]] = []
+
+    for index, record in enumerate(records):
+        validate_record(record, index)
+        metadata = record.get("metadata") or {}
+        result = EvaluationCaseResult(
+            case_id=record.get("id", f"case-{index + 1:03d}"),
+            question=record["question"],
+            category=metadata.get("category", "uncategorized"),
+            difficulty=metadata.get("difficulty", "unspecified"),
+            ground_truth=record["ground_truth"],
+            reference_contexts=record["reference_contexts"],
+        )
+        try:
+            agent_result = normalize_agent_result(agent.ask_with_context(record["question"])) if agent else {
+                "answer": record.get("answer", ""),
+                "contexts": record.get("retrieved_contexts", record["reference_contexts"]),
+                "sources": [],
+            }
+            result.answer = agent_result["answer"]
+            result.contexts = agent_result["contexts"]
+            result.sources = agent_result["sources"]
+
+            expected_sources = metadata.get("source_docs", [])
+            result.checks["expected_sources_retrieved"] = expected_sources_are_retrieved(expected_sources, result.sources) if agent else True
+            result.checks["answer_present"] = bool(result.answer.strip())
+            result.checks["expected_behavior"] = _matches_expected_behavior(
+                result.answer,
+                record,
+            )
+        except Exception as exc:
+            result.status = "error"
+            result.error = str(exc)
+
+        normalized_records.append({**record, "retrieved_contexts": result.contexts})
+        answers.append(result.answer)
+        results.append(result)
+
+    if ragas_runner and results:
+        try:
+            score_maps = ragas_runner(normalized_records, answers)
+            if len(score_maps) != len(results):
+                raise ValueError("RAGAS returned an unexpected number of results.")
+            for result, scores in zip(results, score_maps):
+                result.metrics = scores
+        except Exception as exc:
+            for result in results:
+                result.error = f"RAGAS evaluation failed: {exc}"
+
+    for result in results:
+        if result.status == "passed" and not all(result.checks.values()):
+            result.status = "failed"
+    return results
+
+
+def results_as_dict(results: list[EvaluationCaseResult]) -> list[dict[str, Any]]:
+    return [asdict(result) for result in results]
+
+
+def results_as_json(results: list[EvaluationCaseResult]) -> str:
+    return json.dumps(results_as_dict(results), indent=2)
