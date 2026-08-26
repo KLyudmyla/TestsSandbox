@@ -294,26 +294,6 @@ def _as_score(value: Any) -> float | None:
         return None
 
 
-# def evaluate_assertions(answer: str, spec: dict[str, Any]) -> dict[str, bool]:
-#     """Evaluate explicit behavior and deterministic test assertions."""
-#     normalized_answer = _normalized(answer)
-#     forbidden_claims = [_normalized(claim) for claim in spec["forbidden_claims"]]
-#     mode = spec["mode"]
-#     behavior_ok = bool(answer.strip())
-#     if mode in {SAFE_REFUSAL, GROUNDED_ABSTENTION}:
-#         behavior_ok = _has_refusal(answer)
-#     required_terms_ok = _contains_required_terms(answer, spec["required_terms"])
-#     forbidden_claims_absent = not any(claim and claim in normalized_answer for claim in forbidden_claims)
-#     # Required claims remain available to semantic RAGAS scoring. They are not
-#     # string-matched here because legitimate answers commonly paraphrase them.
-#     return {
-#         "answer_present": bool(answer.strip()),
-#         "expected_behavior": behavior_ok,
-#         "required_terms_present": required_terms_ok,
-#         "forbidden_claims_absent": forbidden_claims_absent,
-#     }
-
-
 def evaluate_assertions(answer: str, spec: dict[str, Any]) -> dict[str, bool]:
     """Evaluate explicit behavior and deterministic test assertions."""
     normalized_answer = _normalized(answer)
@@ -483,78 +463,6 @@ def run_batch(
                 result.status = "failed"
 
     return results
-
-# def run_batch(
-#     records: list[dict[str, Any]],
-#     agent: Any | None = None,
-#     ragas_runner: Callable[[list[dict[str, Any]], list[str]], list[dict[str, float | None]]] | None = None,
-# ) -> list[EvaluationCaseResult]:
-#     """Evaluate records with the production agent and local deterministic checks."""
-#     results: list[EvaluationCaseResult] = []
-#     answers: list[str] = []
-#     normalized_records: list[dict[str, Any]] = []
-#
-#     for index, record in enumerate(records):
-#         validate_record(record, index)
-#         metadata = record.get("metadata") or {}
-#         result = EvaluationCaseResult(
-#             case_id=record.get("id", f"case-{index + 1:03d}"),
-#             question=record["question"],
-#             category=metadata.get("category", "uncategorized"),
-#             difficulty=metadata.get("difficulty", "unspecified"),
-#             ground_truth=record["ground_truth"],
-#             reference_contexts=record["reference_contexts"],
-#         )
-#         spec = evaluation_spec_for(record)
-#         result.evaluation_mode = spec["mode"]
-#         result.assertions = spec
-#         result.metric_applicability = metric_applicability_for(spec["mode"])
-#         try:
-#             agent_result = normalize_agent_result(agent.ask_with_context(record["question"])) if agent else {
-#                 "answer": record.get("answer", ""),
-#                 "contexts": record.get("retrieved_contexts", record["reference_contexts"]),
-#                 "sources": [],
-#             }
-#             result.answer = agent_result["answer"]
-#             result.contexts = agent_result["contexts"]
-#             result.sources = agent_result["sources"]
-#             result.token_usage = estimate_token_usage(result.question, result.contexts, result.answer)
-#
-#             expected_sources = metadata.get("source_docs", [])
-#             result.retrieval = assess_retrieval(
-#                 record["reference_contexts"], result.contexts, expected_sources, result.sources,
-#             )
-#             result.checks["expected_sources_retrieved"] = (
-#                 result.retrieval["expected_sources_retrieved"] if agent and spec["require_grounding"] else True
-#             )
-#             result.checks.update(evaluate_assertions(result.answer, spec))
-#         except Exception as exc:
-#             result.status = "error"
-#             result.error = str(exc)
-#             result.token_usage = estimate_token_usage(result.question, result.contexts, result.answer)
-#
-#         normalized_records.append({**record, "retrieved_contexts": result.contexts})
-#         answers.append(result.answer)
-#         results.append(result)
-#
-#     if ragas_runner and results:
-#         try:
-#             score_maps = ragas_runner(normalized_records, answers)
-#             if len(score_maps) != len(results):
-#                 raise ValueError("RAGAS returned an unexpected number of results.")
-#             for result, scores in zip(results, score_maps):
-#                 result.metrics = {
-#                     name: scores.get(name) if result.metric_applicability[name] else None
-#                     for name in RAGAS_METRIC_NAMES
-#                 }
-#         except Exception as exc:
-#             for result in results:
-#                 result.error = f"RAGAS evaluation failed: {exc}"
-#
-#     for result in results:
-#         if result.status == "passed" and not all(result.checks.values()):
-#             result.status = "failed"
-#     return results
 
 
 def results_as_dict(results: list[EvaluationCaseResult]) -> list[dict[str, Any]]:
