@@ -8,7 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from app.tests.evals.eval_runner import EvaluationCaseResult, RAGAS_METRIC_NAMES, results_as_dict
+from app.tests.evals.eval_runner import EvaluationCaseResult, results_as_dict
+from app.tests.evals.ragas_config import RAGASConfig
 
 
 def write_reports(results: list[EvaluationCaseResult], output_dir: Path, config: dict[str, Any]) -> Path:
@@ -17,8 +18,6 @@ def write_reports(results: list[EvaluationCaseResult], output_dir: Path, config:
     run_dir.mkdir(parents=True, exist_ok=True)
 
     rows = results_as_dict(results)
-
-    # Sanitize and strip bloat prior to writing outputs
     cleaned_rows = [_clean_case_row(row) for row in rows]
 
     (run_dir / "results.json").write_text(
@@ -35,13 +34,11 @@ def _clean_case_row(row: dict[str, Any]) -> dict[str, Any]:
     mode = row.get("evaluation_mode", "answer_from_context")
     applicability = row.get("metric_applicability", {})
 
-    # Filter out metrics that do not apply to this evaluation mode
     active_metrics = {
         name: val for name, val in row.get("metrics", {}).items()
         if applicability.get(name, False) and val is not None
     }
 
-    # Isolate failure root causes for scannability
     failed_checks = [check for check, passed in row.get("checks", {}).items() if not passed]
 
     retrieval = row.get("retrieval", {})
@@ -135,10 +132,12 @@ def _summary_markdown(rows: list[dict[str, Any]], config: dict[str, Any]) -> str
     for row in rows:
         mode_rows.setdefault(row.get("evaluation_mode", "answer_from_context"), []).append(row)
 
+    active_metric_names = RAGASConfig.active_metric_names()
+
     lines.extend(["", "## Metrics Breakdown by Evaluation Mode", ""])
     for mode, grouped_rows in sorted(mode_rows.items()):
         parts = [f"**{mode}** ({len(grouped_rows)} cases)"]
-        for name in sorted(RAGAS_METRIC_NAMES):
+        for name in sorted(active_metric_names):
             values = [
                 row["metrics"].get(name)
                 for row in grouped_rows

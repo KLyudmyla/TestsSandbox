@@ -10,3 +10,4 @@ def normalize_agent_result(result: dict[str, Any]) -> dict[str, Any]:
         "contexts": [str(value) for value in result.get("contexts", [])],
         "sources": [str(value) for value in result.get("sources", [])],
     }
+

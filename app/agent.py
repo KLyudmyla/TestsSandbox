@@ -2,12 +2,12 @@ import os
 from typing import Any
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
+# from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents import create_openai_tools_agent
 from langchain.agents.agent import AgentExecutor
-
+from langchain_chroma import Chroma
 
 class DocumentSearchAgent:
     """
@@ -115,7 +115,7 @@ class DocumentSearchAgent:
         agent = create_openai_tools_agent(self.llm, tools, prompt)
 
         # Return the executor responsible for running the agent loop
-        return AgentExecutor(agent=agent, tools=tools, verbose=True)
+        return AgentExecutor(agent=agent, tools=tools, verbose=False)
 
     def ask(self, user_input: str, chat_history: list[Any] = None) -> dict[str, Any]:
         """
