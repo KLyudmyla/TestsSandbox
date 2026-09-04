@@ -6,10 +6,10 @@ import argparse
 import os
 from pathlib import Path
 
-from app.evaluation.evals_logic.eval_runner import run_batch, run_ragas
-from app.evaluation.datasets.golden_dataset import MY_DATASET
-from app.evaluation.evals_logic.ragas_config import RAGASConfig
-from app.evaluation.evals_logic.reports import write_reports
+from app.tests.evaluation.ragas_logic.eval_runner import run_batch, run_ragas
+from app.tests.evaluation.datasets.golden_dataset import MY_DATASET
+from app.tests.evaluation.ragas_logic.ragas_config import RAGASConfig
+from app.tests.evaluation.ragas_logic.reports import write_reports
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -30,7 +30,7 @@ def load_agent():
     if not api_key:
         raise ValueError("OPENAI_API_KEY is required for live agent evaluation.")
     agent = DocumentSearchAgent(openai_api_key=api_key, model_name=RAGASConfig.LLM_MODEL)
-    knowledge_base_dir = Path(__file__).resolve().parents[2] / "knowledge_base"
+    knowledge_base_dir = Path(__file__).resolve().parents[3] / "knowledge_base"
     for file_path in knowledge_base_dir.glob("*.txt"):
         agent.upload_document(file_path.read_text(encoding="utf-8"), file_path.name)
     return agent

@@ -31,37 +31,60 @@ The project was prepared primarily for Windows 11 and PyCharm, but its Python co
 ## Project structure
 
 ```text
-project-root/
-├── app/
-│   ├── __init__.py
-│   ├── main.py                    # FastAPI application and endpoints
-│   ├── agent.py                   # LangChain/OpenAI RAG agent
-│   ├── it_practice.py             # PostgreSQL connection and SQLAlchemy models
-│   ├── ut_practice.py             # Unit-testing exercise implementations
-│   ├── knowledge_base/
-│   │   ├── engineering_stack.txt
-│   │   ├── hr_remote_work.txt
-│   │   ├── it_laptop_request.txt
-│   │   └── office_kitchen.txt
-│   ├── evaluation/
-│   │   ├── datasets/
-│   │   │   └── golden_dataset.py  # RAG evaluation cases
-│   │   └── evals_logic/
-│   │       ├── conftest.py         # RAG pytest fixtures and report hook
-│   │       ├── eval_runner.py      # Evaluation and scoring logic
-│   │       ├── ragas_config.py     # Evaluation configuration
-│   │       ├── reports.py          # JSON, CSV, and Markdown report writers
-│   │       ├── retrieval.py        # Agent-result normalization
-│   │       └── run_evals.py        # Standalone evaluation CLI
-│   └── tests/
-│       ├── unit/                   # Unit and evaluation-runner tests
-│       ├── integration/            # PostgreSQL-backed API tests
-│       └── rag_eval/               # Parameterized RAG evaluation tests
-├── .env.example                    # Example evaluation configuration
-├── .gitignore
-├── docker-compose.yml              # Local PostgreSQL service
-├── requirements.txt
-├── README.md
+ TestsSandbox/
+  ├── app/
+  │   ├── __init__.py
+  │   ├── main.py
+  │   ├── agent.py
+  │   ├── it_practice.py
+  │   ├── ut_practice.py
+  │   │
+  │   ├── knowledge_base/
+  │   │   ├── engineering_stack.txt
+  │   │   ├── hr_remote_work.txt
+  │   │   ├── it_laptop_request.txt
+  │   │   └── office_kitchen.txt
+  │   │
+  │   └── tests/
+  │       ├── __init__.py
+  │       │
+  │       ├── unit/
+  │       │   ├── test_block0_unittests.py
+  │       │   ├── test_block1_unittests.py
+  │       │   ├── test_block2_unittests.py
+  │       │   ├── test_block3_unittests.py
+  │       │   ├── test_block4_unittests.py
+  │       │   ├── test_block5_unittests.py
+  │       │   ├── test_block6_unittests.py
+  │       │   ├── test_block7_unittests.py
+  │       │   └── test_eval_runner.py
+  │       │
+  │       ├── integration/
+  │       │   ├── conftest.py
+  │       │   └── test_1.py
+  │       │
+  │       └── evaluation/
+  │           ├── conftest.py
+  │           ├── test_agent.py
+  │           ├── datasets/
+  │           │   ├── __init__.py
+  │           │   └── golden_dataset.py
+  │           └── ragas_logic/
+  │               ├── __init__.py
+  │               ├── conftest.py
+  │               ├── eval_runner.py
+  │               ├── ragas_config.py
+  │               ├── reports.py
+  │               ├── retrieval.py
+  │               └── run_evals.py
+  │
+  ├── .env
+  ├── .env.example
+  ├── .gitignore
+  ├── docker-compose.yml
+  ├── requirements.txt
+  ├── README.md
+  └── __init__.py
 
 ```
 
@@ -195,45 +218,40 @@ pytest app/tests/integration
 
 ### RAG evaluation tests
 
-
-Both variants call the live OpenAI-backed RAG agent. `--skip-ragas` skips the additional judge-based metric calls; it does not make the agent evaluation offline or free.
-
-## Standalone RAG evaluation
-
 The golden dataset contains 50 cases across three evaluation modes:
 
 - 38 answer-from-context cases;
 - 4 grounded-abstention cases;
 - 8 safe-refusal cases.
 
-Run deterministic retrieval and behavior checks without RAGAS judge metrics:
+# Run deterministic retrieval and behavior checks without RAGAS judge metrics:
 
 ```powershell
-python -m app.evaluation.evals_logic.run_evals --skip-ragas
+python -m app.tests.evaluation.ragas_logic.run_evals --skip-ragas
+
 ```
 
-Run the full evaluation with Faithfulness, Answer Relevancy, Context Precision, and Context Recall:
-
-```powershell
-python -m pytest app/tests/rag_eval/test_agent.py
-
-# or 
-
-python -m app.evaluation.evals_logic.run_evals
-```
+# Run the full evaluation with Faithfulness, Answer Relevancy, Context Precision, and Context Recall:
 
 Useful filters and output options:
+Evaluate only the first five records
 
 ```powershell
-# Evaluate only the first five records
-python -m app.evaluation.evals_logic.run_evals --limit 5
-
-# Evaluate one exact dataset category
-python -m app.evaluation.evals_logic.run_evals --category "Happy Path / Engineering"
-
+python -m app.tests.evaluation.ragas_logic.run_evals --limit 5
 ```
 
-Every standalone run initializes the agent and requires `OPENAI_API_KEY`, including runs made with `--skip-ragas`.
+Evaluate one exact dataset category
+
+```powershell
+python -m app.tests.evaluation.ragas_logic.run_evals --category "Happy Path / Engineering"
+
+```
+Run evaluation tests via parametrization:
+
+```powershell
+python -m pytest app\tests\evaluation\test_agent.py -v
+
+```
 
 ## Evaluation reports
 

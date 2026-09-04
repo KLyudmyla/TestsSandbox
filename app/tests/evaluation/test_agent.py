@@ -1,7 +1,7 @@
 import pytest
-from app.evaluation.evals_logic.eval_runner import run_batch
-from app.evaluation.datasets.golden_dataset import MY_DATASET
-from app.evaluation.evals_logic.conftest import *
+from app.tests.evaluation.ragas_logic.eval_runner import run_batch
+from app.tests.evaluation.datasets.golden_dataset import MY_DATASET
+from app.tests.evaluation.ragas_logic.conftest import record_case_result
 
 
 class TestCasesForRagasDataset:

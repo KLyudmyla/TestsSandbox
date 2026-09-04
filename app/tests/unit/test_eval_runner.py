@@ -1,6 +1,6 @@
-from app.evaluation.evals_logic.eval_runner import assess_retrieval, estimate_token_usage, run_batch
-from app.evaluation.evals_logic.ragas_config import RAGASConfig
-from app.evaluation.evals_logic.reports import write_reports
+from app.tests.evaluation.ragas_logic.eval_runner import assess_retrieval, estimate_token_usage, run_batch
+from app.tests.evaluation.ragas_logic.ragas_config import RAGASConfig
+from app.tests.evaluation.ragas_logic.reports import write_reports
 
 
 RECORD = {

@@ -21,7 +21,7 @@ class RAGASConfig:
     TEMPERATURE = float(os.getenv("RAGAS_TEMPERATURE", "0"))
 
     # RAGAS runtime configuration
-    RUN_TIMEOUT = int(os.getenv("RAGAS_RUN_TIMEOUT", "100"))
+    RUN_TIMEOUT = int(os.getenv("RAGAS_RUN_TIMEOUT", "120"))
     RUN_MAX_RETRIES = int(os.getenv("RAGAS_RUN_MAX_RETRIES", "3"))
     RUN_MAX_WORKERS = int(os.getenv("RAGAS_RUN_MAX_WORKERS", "4"))
 
