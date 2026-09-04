@@ -13,8 +13,8 @@ from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.llms import LangchainLLMWrapper
 from ragas.run_config import RunConfig
 
-from app.tests.evals.ragas_config import RAGASConfig
-from app.tests.evals.retrieval import normalize_agent_result
+from app.evaluation.evals_logic.ragas_config import RAGASConfig
+from app.evaluation.evals_logic.retrieval import normalize_agent_result
 
 # Evaluation Modes
 SAFE_REFUSAL = "safe_refusal"
@@ -125,10 +125,19 @@ def assess_retrieval(
     }
 
 
+def get_ragas_run_config() -> RunConfig:
+    """Build the shared runtime configuration used by RAGAS evaluation."""
+    return RunConfig(
+        timeout=RAGASConfig.RUN_TIMEOUT,
+        max_retries=RAGASConfig.RUN_MAX_RETRIES,
+        max_workers=RAGASConfig.RUN_MAX_WORKERS,
+    )
+
+
 @lru_cache(maxsize=1)
 def get_cached_ragas_metrics():
     """Cache judge LLM, Embeddings, and active RAGAS metrics setup."""
-    run_config = RunConfig(timeout=120, max_retries=3, max_workers=4)
+    run_config = get_ragas_run_config()
     judge_llm = LangchainLLMWrapper(
         ChatOpenAI(model=RAGASConfig.LLM_MODEL, temperature=RAGASConfig.TEMPERATURE),
         run_config=run_config
@@ -153,6 +162,7 @@ def run_ragas(records: list[dict[str, Any]], answers: list[str]) -> list[dict[st
 
     RAGASConfig.validate(require_api_key=True)
     metrics = get_cached_ragas_metrics()
+    run_config = get_ragas_run_config()
 
     samples = [
         SingleTurnSample(
@@ -170,7 +180,7 @@ def run_ragas(records: list[dict[str, Any]], answers: list[str]) -> list[dict[st
     for metric in metrics:
         metric_name = metric.name
         try:
-            res_df = evaluate(dataset=dataset, metrics=[metric], show_progress=False).to_pandas()
+            res_df = evaluate(dataset=dataset, metrics=[metric], run_config=run_config, show_progress=False).to_pandas()
             for idx, row in res_df.iterrows():
                 mode = resolve_evaluation_mode(records[idx])
                 applicability = metric_applicability_for(mode)

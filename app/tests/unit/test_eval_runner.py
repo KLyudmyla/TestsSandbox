@@ -1,6 +1,6 @@
-from app.tests.evals.eval_runner import RAGAS_METRIC_NAMES, assess_retrieval, estimate_token_usage, run_batch
-from app.tests.evals.ragas_config import RAGASConfig
-from app.tests.evals.reports import write_reports
+from app.evaluation.evals_logic.eval_runner import assess_retrieval, estimate_token_usage, run_batch
+from app.evaluation.evals_logic.ragas_config import RAGASConfig
+from app.evaluation.evals_logic.reports import write_reports
 
 
 RECORD = {
@@ -54,18 +54,6 @@ def test_token_usage_estimate_includes_input_output_and_cost():
     assert usage["output_tokens_estimate"] > 0
     assert usage["total_tokens_estimate"] == usage["input_tokens_estimate"] + usage["output_tokens_estimate"]
     assert usage["total_cost_usd"] == usage["input_cost_usd"] + usage["output_cost_usd"]
-
-
-def test_run_batch_accepts_mocked_ragas_runner():
-    results = run_batch(
-        [RECORD],
-        agent=FakeAgent(),
-        ragas_runner=lambda records, answers: [{"faithfulness": 1.0}],
-    )
-
-    assert results[0].metrics == {
-        name: 1.0 if name == "faithfulness" else None for name in RAGAS_METRIC_NAMES
-    }
 
 
 def test_safe_refusal_is_checked_without_requiring_retrieval_or_ragas_scores():

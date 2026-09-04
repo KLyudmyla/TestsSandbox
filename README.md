@@ -1,201 +1,301 @@
-# 🚀 Educational Project: Testing a FastAPI RAG Agent
+# Educational Project: Testing a FastAPI RAG Agent
 
-Welcome to your practical testing sandbox! This project is a microservice built with **FastAPI** that wraps an AI Agent designed using the **RAG (Retrieval-Augmented Generation)** pattern.
+This project is a testing sandbox for a FastAPI microservice built around a Retrieval-Augmented Generation (RAG) agent. The service preloads local corporate-policy documents into an in-memory Chroma vector store and uses a LangChain/OpenAI agent to answer questions from that material.
 
-The agent can search through uploaded company documents and answer user questions based *only* on that data. Our main goal for this mentorship is to learn how to write robust automated tests for this AI system.
+The repository also contains:
 
----
+- unit-testing exercises covering progressively more advanced Python testing techniques;
+- PostgreSQL-backed integration tests for users and articles;
+- a 50-case RAG evaluation dataset;
+- deterministic retrieval and behavior checks;
+- optional RAGAS scoring and JSON, CSV, and Markdown reports.
 
-## 🛠️ Tech Stack & Requirements
+## Requirements
 
-* **OS:** Windows 11
-* **IDE:** PyCharm (Community or Professional)
-* **Language:** Python 3.10+
-* **Frameworks:** FastAPI, LangChain, Uvicorn, PyTest
-* **Vector Database:** Chroma DB (runs locally in-memory)
----
+- Docker Desktop with Docker Compose
+- An OpenAI API key
+- Internet access for OpenAI model and embedding requests
 
-## 📂 Project Structure in PyCharm
+The project was prepared primarily for Windows 11 and PyCharm, but its Python commands can also be run from other IDEs or terminals.
 
-Ensure your project directory looks exactly like this:
+## Technology stack
+
+- FastAPI and Uvicorn
+- LangChain and LangChain OpenAI
+- OpenAI chat models and embeddings
+- Chroma vector store
+- PostgreSQL 15 and SQLAlchemy
+- Pytest and pytest-asyncio
+- RAGAS, Datasets, and Pandas
+
+## Project structure
 
 ```text
-llm-agent-testing/
-│
-├── app/                  # Application source code
+project-root/
+├── app/
 │   ├── __init__.py
-│   ├── agent.py          # AI Agent core logic
-│   └── main.py           # FastAPI application & endpoints
-│
-├── requirements.txt      # Project dependencies
-└── README.md             # This instruction file
+│   ├── main.py                    # FastAPI application and endpoints
+│   ├── agent.py                   # LangChain/OpenAI RAG agent
+│   ├── it_practice.py             # PostgreSQL connection and SQLAlchemy models
+│   ├── ut_practice.py             # Unit-testing exercise implementations
+│   ├── knowledge_base/
+│   │   ├── engineering_stack.txt
+│   │   ├── hr_remote_work.txt
+│   │   ├── it_laptop_request.txt
+│   │   └── office_kitchen.txt
+│   ├── evaluation/
+│   │   ├── datasets/
+│   │   │   └── golden_dataset.py  # RAG evaluation cases
+│   │   └── evals_logic/
+│   │       ├── conftest.py         # RAG pytest fixtures and report hook
+│   │       ├── eval_runner.py      # Evaluation and scoring logic
+│   │       ├── ragas_config.py     # Evaluation configuration
+│   │       ├── reports.py          # JSON, CSV, and Markdown report writers
+│   │       ├── retrieval.py        # Agent-result normalization
+│   │       └── run_evals.py        # Standalone evaluation CLI
+│   └── tests/
+│       ├── unit/                   # Unit and evaluation-runner tests
+│       ├── integration/            # PostgreSQL-backed API tests
+│       └── rag_eval/               # Parameterized RAG evaluation tests
+├── .env.example                    # Example evaluation configuration
+├── .gitignore
+├── docker-compose.yml              # Local PostgreSQL service
+├── requirements.txt
+├── README.md
 
 ```
 
----
+The `results/` directory is created when RAG evaluations produce reports.
 
-## ⚙️ Step 1: Project Setup in PyCharm (Windows 11)
-PRECONDITION: use python == 3.12 as it will affect the reports scoring
+## Setup
 
-1. **Open the Project:** Launch PyCharm, click **Open**, and select your `llm-agent-testing` folder.
-2. **Create a Virtual Environment (venv):**
-**Open the Terminal:** Find the **Terminal** tab in PyCharm's bottom panel. 
-Windows:
+Run all commands from the project root.
 
-```bash
-python -m venv venv
+### 1. Create and activate a virtual environment
 
-```
-Linux:
-```bash
-python3 -m venv venv
+PowerShell:
 
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-3. Activate your virtual environment
-
-Windows:
-
-```bash
-venv\Scripts\activate
-
-```
-Linux:
-```bash
-source venv/bin/activate
-
-```
-
-## 📦 Step 2: Installing Dependencies
-
-In the PyCharm terminal, run the following command to install all required libraries:
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## 🐳 Step 3: Spinning up PostgreSQL via Docker
-We use Docker Desktop to run a real PostgreSQL database for our integration tests. This keeps your local Windows system clean and guarantees identical testing environments.
-
-1. Make sure Docker Desktop is running on your Windows machine.
-2. Open your terminal in the root directory of the project (where docker-compose.yml is located).
-3. Start the PostgreSQL database container in background mode:
+Command Prompt:
 
 ```cmd
+python -m venv .venv
+.venv\Scripts\activate.bat
+```
+
+Linux or macOS:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 2. Install dependencies
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+### 3. Configure environment variables
+
+The FastAPI service and live RAG evaluations require `OPENAI_API_KEY`.
+
+To use a local `.env` file in PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Add the following entry to `.env`:
+
+```dotenv
+OPENAI_API_KEY=your-openai-api-key
+```
+
+Alternatively, set it for the current terminal session.
+
+PowerShell:
+
+```powershell
+$env:OPENAI_API_KEY = "your-openai-api-key"
+```
+
+Command Prompt:
+
+```cmd
+set OPENAI_API_KEY=your-openai-api-key
+```
+
+The application currently recognizes these optional RAG evaluation settings:
+
+```dotenv
+RAGAS_LLM_MODEL=gpt-4o-mini
+RAGAS_EMBEDDINGS_MODEL=text-embedding-3-small
+RAGAS_TEMPERATURE=0
+RAGAS_EVAL_INPUT_COST_PER_MILLION_USD=0.15
+RAGAS_EVAL_OUTPUT_COST_PER_MILLION_USD=0.60
+```
+
+Evaluation pass thresholds are currently defined directly in `app/evaluation/evals_logic/ragas_config.py`.
+
+### 4. Start PostgreSQL
+
+The API creates its database tables while `app.main` is imported, so PostgreSQL must be running before the server or integration tests start.
+
+```powershell
 docker compose up -d
-```
-4. To verify that the database container has successfully started, run:
-
-```cmd
 docker ps
 ```
-You should see a running container named integration_test_db mapped to port 5432.
 
+The development database connection is currently defined directly in `app/it_practice.py` and matches `docker-compose.yml`:
 
-## 🔑 Step 4: Setting Up the OpenAI API Key in Windows
+## Run the API
 
-Our agent requires an API key to communicate with the language model. We pass it via environment variables so we don't accidentally hardcode it.
+After PostgreSQL is running and `OPENAI_API_KEY` is configured:
 
-### Option A: Quick setup via PyCharm Terminal
-
-Every time before you start the server, run this command in your PyCharm terminal:
-
-```cmd
-set OPENAI_API_KEY=your-actual-openai-api-key
-
-```
-
-*(Note: If you close the terminal tab, you will need to re-run this command in the new terminal window).*
-
-### Option B: Permanent setup via PyCharm Configurations (Recommended)
-
-To avoid typing the key every time:
-
-1. In the top right of PyCharm, click the drop-down menu next to the green **Run** button -> **Edit Configurations...**
-2. (If there are no configurations yet, we will create one in Step 4, then return to this step).
-3. Find the **Environment variables** field, click the folder icon, and add a new entry:
-* Name: `OPENAI_API_KEY`
-* Value: `your-actual-openai-api-key`
-
-
----
-
-## 🏃 Step 5: Launching the FastAPI Server
-
-You can start the application using the PyCharm Terminal. Run the following command from the root directory:
-
-```bash
+```powershell
 uvicorn app.main:app --reload
+```
+
+Open the generated Swagger UI at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+
+The application loads every `.txt` file from `app/knowledge_base/` during FastAPI startup. Chroma is configured without a persistence directory, so its vector data is rebuilt for each application process.
+
+## API endpoints
+
+| Method | Endpoint | Input | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/query` | JSON request body | Ask the RAG agent a question |
+| `POST` | `/users/` | Query parameters | Create a database user |
+| `GET` | `/users/` | None | List database users |
+| `POST` | `/articles/` | Query parameters | Create an article for an existing user |
+| `GET` | `/articles/` | None | List database articles |
+
+
+## Automated tests
+
+### Unit tests
+
+The unit suite covers the exercise blocks in `app/ut_practice.py` and the deterministic evaluation/reporting logic.
+
+```powershell
+pytest app/tests/unit
+```
+### Integration tests
+
+The integration suite tests the FastAPI user and article endpoints against PostgreSQL.
+
+```powershell
+pytest app/tests/integration
+```
+
+### RAG evaluation tests
+
+
+Both variants call the live OpenAI-backed RAG agent. `--skip-ragas` skips the additional judge-based metric calls; it does not make the agent evaluation offline or free.
+
+## Standalone RAG evaluation
+
+The golden dataset contains 50 cases across three evaluation modes:
+
+- 38 answer-from-context cases;
+- 4 grounded-abstention cases;
+- 8 safe-refusal cases.
+
+Run deterministic retrieval and behavior checks without RAGAS judge metrics:
+
+```powershell
+python -m app.evaluation.evals_logic.run_evals --skip-ragas
+```
+
+Run the full evaluation with Faithfulness, Answer Relevancy, Context Precision, and Context Recall:
+
+```powershell
+python -m pytest app/tests/rag_eval/test_agent.py
+
+# or 
+
+python -m app.evaluation.evals_logic.run_evals
+```
+
+Useful filters and output options:
+
+```powershell
+# Evaluate only the first five records
+python -m app.evaluation.evals_logic.run_evals --limit 5
+
+# Evaluate one exact dataset category
+python -m app.evaluation.evals_logic.run_evals --category "Happy Path / Engineering"
 
 ```
 
-If everything is configured correctly, server logs will start streaming, and you will see:
+Every standalone run initializes the agent and requires `OPENAI_API_KEY`, including runs made with `--skip-ragas`.
+
+## Evaluation reports
+
+Each evaluation run writes a timestamped directory:
 
 ```text
-INFO: Uvicorn running on [http://127.0.0.1:8000](http://127.0.0.1:8000) (Press CTRL+C to quit)
-
+results/<UTC timestamp>/
+├── results.json
+├── results.csv
+└── summary.md
 ```
 
----
+Reports contain case status, evaluation mode, retrieved sources, deterministic checks, applicable RAGAS metrics, and estimated token usage and cost. The token and cost values are simplified local estimates, not authoritative OpenAI billing records.
 
-## 🧪 Step 6: Manual Testing via Swagger UI (Smoke Test)
+## Troubleshooting
 
-When the server runs, FastAPI automatically generates an interactive API documentation page.
+### `ModuleNotFoundError`
 
-1. Open your browser and navigate to: **[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)**
-2. You will see the **Swagger UI** dashboard with our endpoint: `POST /query`.
-3. Click on the endpoint, then click the **Try it out** button on the right.
-4. In the **Request body** JSON box, type a question related to the mock corporate documents (the data is preloaded automatically on startup; you can check the exact sentences in `app/main.py`).
-
-**Example Request:**
-
-```json
-{
-  "question": "What is our primary tech stack?"
-}
-
-```
-
-5. Click the big blue **Execute** button.
-6. Scroll down to the **Responses** section. In the `Server response` body (Code 200), you should see the AI agent's answer:
-
-```json
-{
-  "answer": "Our primary tech stack consists of Python, FastAPI, and React."
-}
-
-```
-
----
-
-## 🛠️ Troubleshooting
-
-* **Error: `ModuleNotFoundError**` -> You either forgot to activate your `venv` or didn't run `pip install -r requirements.txt`.
-* **Error: `RuntimeError: OPENAI_API_KEY environment variable is not set!**` -> The application cannot find your key. Double-check Step 3 (the `set` command must be run in the *exact same* terminal window where you start the server).
-* **Port Conflict Error** -> If port 8000 is already in use by another app on your PC, change the port using this command: `uvicorn app.main:app --reload --port 8080`.
-
----
-
-**Next Learning Stage:** We will start writing automated tests using `pytest` and learn how to use **mocks** so we can test this exact endpoint automatically, instantly, and for free!
-
-## Local RAG Evaluation
-
-The evaluation dataset and runner live under `app/tests/evals/`. The runner sends each question through the production agent, captures retrieved contexts, applies deterministic checks, and optionally scores the batch with RAGAS.
+Activate the correct virtual environment and reinstall the dependencies:
 
 ```powershell
-python -m app.tests.evals.run_evals --skip-ragas
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 ```
 
-Run the complete evaluation, including Faithfulness, Answer Relevancy, Context Precision, and Context Recall:
+### `OPENAI_API_KEY environment variable is not set`
+
+Add the key to `.env` or set it in the same terminal session that launches Uvicorn, Pytest, or the evaluation command.
+
+### PostgreSQL connection failure
+
+Confirm Docker Desktop is running and inspect the database container:
 
 ```powershell
-python -m app.tests.evals.run_evals
+docker compose up -d
+docker ps
 ```
 
-Each run writes `results.json`, `results.csv`, and `summary.md` to a timestamped directory under `results/`. Live RAGAS scoring requires an OpenAI API key and may incur API usage costs.
+Also confirm that port `5432` is not being used by another local PostgreSQL instance.
 
+### Port 8000 is already in use
+
+Start Uvicorn on another port:
+
+```powershell
+uvicorn app.main:app --reload --port 8080
 ```
 
+Then open [http://127.0.0.1:8080/docs](http://127.0.0.1:8080/docs).
+
+## Stop the local database
+
+Stop the container while preserving its Docker volume:
+
+```powershell
+docker compose down
+```
+
+Removing the `postgres_data` volume also removes the locally stored database data, so do that only when a full reset is intended.
+
+## Clean cache
+
+```powershell
+Remove-Item -Recurse -Force .pytest_cache
 ```

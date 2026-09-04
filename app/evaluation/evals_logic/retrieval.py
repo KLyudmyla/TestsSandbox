@@ -1,5 +1,3 @@
-"""Helpers for normalizing agent retrieval output."""
-
 from typing import Any
 
 
