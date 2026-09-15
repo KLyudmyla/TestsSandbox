@@ -227,7 +227,7 @@ The golden dataset contains 50 cases across three evaluation modes:
 # Run deterministic retrieval and behavior checks without RAGAS judge metrics:
 
 ```powershell
-python -m app.tests.evaluation.ragas_logic.run_evals --skip-ragas
+python -m app.tests.evaluation.rag_eval.ragas_logic.run_evals --skip-ragas
 
 ```
 
@@ -237,19 +237,19 @@ Useful filters and output options:
 Evaluate only the first five records
 
 ```powershell
-python -m app.tests.evaluation.ragas_logic.run_evals --limit 5
+python -m app.tests.evaluation.rag_eval.ragas_logic.run_evals --limit 5
 ```
 
 Evaluate one exact dataset category
 
 ```powershell
-python -m app.tests.evaluation.ragas_logic.run_evals --category "Happy Path / Engineering"
+python -m app.tests.evaluation.rag_eval.ragas_logic.run_evals --category "Happy Path / Engineering"
 
 ```
 Run evaluation tests via parametrization:
 
 ```powershell
-python -m pytest app\tests\evaluation\test_agent.py -v
+python -m pytest app\tests\evaluation\rag_eval\test_agent.py -v
 
 ```
 

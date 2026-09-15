@@ -2,10 +2,10 @@ import json
 from pathlib import Path
 import pytest
 
-from app.tests.evaluation.ragas_logic.eval_runner import run_ragas, EvaluationCaseResult
-from app.tests.evaluation.ragas_logic.ragas_config import RAGASConfig
-from app.tests.evaluation.ragas_logic.reports import write_reports
-from app.tests.evaluation.ragas_logic.run_evals import load_agent
+from app.tests.evaluation.rag_eval.ragas_logic.eval_runner import run_ragas, EvaluationCaseResult
+from app.tests.evaluation.rag_eval.ragas_logic.ragas_config import RAGASConfig
+from app.tests.evaluation.rag_eval.ragas_logic.reports import write_reports
+from app.tests.evaluation.rag_eval.ragas_logic.run_evals import load_agent
 
 
 @pytest.fixture(scope="session")

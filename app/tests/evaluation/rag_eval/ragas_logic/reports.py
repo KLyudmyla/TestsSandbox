@@ -8,8 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from app.tests.evaluation.ragas_logic.eval_runner import EvaluationCaseResult, results_as_dict
-from app.tests.evaluation.ragas_logic.ragas_config import RAGASConfig
+from app.tests.evaluation.rag_eval.ragas_logic.eval_runner import EvaluationCaseResult, results_as_dict
+from app.tests.evaluation.rag_eval.ragas_logic.ragas_config import RAGASConfig
 
 
 def write_reports(results: list[EvaluationCaseResult], output_dir: Path, config: dict[str, Any]) -> Path:

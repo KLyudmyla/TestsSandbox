@@ -13,8 +13,8 @@ from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.llms import LangchainLLMWrapper
 from ragas.run_config import RunConfig
 
-from app.tests.evaluation.ragas_logic.ragas_config import RAGASConfig
-from app.tests.evaluation.ragas_logic.retrieval import normalize_agent_result
+from app.tests.evaluation.rag_eval.ragas_logic.ragas_config import RAGASConfig
+from app.tests.evaluation.rag_eval.ragas_logic.retrieval import normalize_agent_result
 
 # Evaluation Modes
 SAFE_REFUSAL = "safe_refusal"
