@@ -1,7 +1,7 @@
 import pytest
-from app.tests.evals.eval_runner import run_batch
-from app.tests.evals.golden_dataset import MY_DATASET
-from app.tests.evals.conftest import record_case_result
+from app.tests.evaluation.rag_eval.ragas_logic.eval_runner import run_batch
+from app.tests.evaluation.datasets.golden_dataset import MY_DATASET
+from app.tests.evaluation.rag_eval.ragas_logic.conftest import record_case_result
 
 
 class TestCasesForRagasDataset:
@@ -12,7 +12,7 @@ class TestCasesForRagasDataset:
         ids=[record["id_name"] for record in MY_DATASET],
     )
     def test_eval_case(self, case, agent_fixture, ragas_runner_fixture, pytestconfig):
-        """Evaluates individual dataset cases using RAGAS and deterministic checks."""
+        """Evaluates individual datasets cases using RAGAS and deterministic checks."""
         results = run_batch([case], agent=agent_fixture, ragas_runner=ragas_runner_fixture)
         result = results[0]
 

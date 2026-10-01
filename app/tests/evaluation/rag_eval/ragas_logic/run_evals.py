@@ -6,17 +6,17 @@ import argparse
 import os
 from pathlib import Path
 
-from app.tests.evals.eval_runner import run_batch, run_ragas
-from app.tests.evals.golden_dataset import MY_DATASET
-from app.tests.evals.ragas_config import RAGASConfig
-from app.tests.evals.reports import write_reports
+from app.tests.evaluation.rag_eval.ragas_logic.eval_runner import run_batch, run_ragas
+from app.tests.evaluation.datasets.golden_dataset import MY_DATASET
+from app.tests.evaluation.rag_eval.ragas_logic.ragas_config import RAGASConfig
+from app.tests.evaluation.rag_eval.ragas_logic.reports import write_reports
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Run the local RAG evaluation dataset.")
+    parser = argparse.ArgumentParser(description="Run the local RAG evaluation datasets.")
     parser.add_argument("--skip-ragas", action="store_true", help="Run deterministic checks without live RAGAS scoring.")
     parser.add_argument("--limit", type=int, help="Evaluate only the first N records.")
-    parser.add_argument("--category", help="Evaluate only one dataset category.")
+    parser.add_argument("--category", help="Evaluate only one datasets category.")
     project_root = Path(__file__).resolve().parents[3]
     default_output_dir = project_root / RAGASConfig.OUTPUT_DIR
     parser.add_argument("--output-dir", type=Path, default=default_output_dir)
@@ -30,7 +30,7 @@ def load_agent():
     if not api_key:
         raise ValueError("OPENAI_API_KEY is required for live agent evaluation.")
     agent = DocumentSearchAgent(openai_api_key=api_key, model_name=RAGASConfig.LLM_MODEL)
-    knowledge_base_dir = Path(__file__).resolve().parents[2] / "knowledge_base"
+    knowledge_base_dir = Path(__file__).resolve().parents[4] / "knowledge_base"
     for file_path in knowledge_base_dir.glob("*.txt"):
         agent.upload_document(file_path.read_text(encoding="utf-8"), file_path.name)
     return agent

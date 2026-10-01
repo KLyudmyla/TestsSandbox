@@ -20,6 +20,11 @@ class RAGASConfig:
     EMBEDDINGS_MODEL = os.getenv("RAGAS_EMBEDDINGS_MODEL", "text-embedding-3-small")
     TEMPERATURE = float(os.getenv("RAGAS_TEMPERATURE", "0"))
 
+    # RAGAS runtime configuration
+    RUN_TIMEOUT = int(os.getenv("RAGAS_RUN_TIMEOUT", "120"))
+    RUN_MAX_RETRIES = int(os.getenv("RAGAS_RUN_MAX_RETRIES", "3"))
+    RUN_MAX_WORKERS = int(os.getenv("RAGAS_RUN_MAX_WORKERS", "4"))
+
     METRICS = {
         "faithfulness": True,
         "answer_relevancy": True,
